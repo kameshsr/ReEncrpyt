@@ -6,8 +6,8 @@ import com.ReEncrypt.dto.RequestWrapper;
 import com.ReEncrypt.dto.ResponseWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.mosip.kernel.core.exception.IOException;
-import org.apache.tomcat.util.codec.binary.Base64;
+import io.mosip.kernel.core.logger.spi.Logger;
+import io.mosip.kernel.keymanagerservice.logger.KeymanagerLogger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -28,8 +28,8 @@ import java.util.Collections;
 @Component
 public class ReEncrypt
 {
-//    Logger log = (Logger) LoggerFactory.getLogger(ReEncryptService.class);
 
+    private static final Logger log = KeymanagerLogger.getLogger(ReEncrypt.class);
 
     @Autowired
     RestTemplate restTemplate;
@@ -66,7 +66,7 @@ public class ReEncrypt
 
     public String getAllReEncrypt() throws SQLException {
         Statement statement;
-        System.out.println("PostgreSQL JDBC Connection Testing ~");
+        log.info("PostgreSQL JDBC Connection Testing ~");
 
 
         try {
@@ -89,30 +89,34 @@ public class ReEncrypt
             rs = statement.executeQuery(query);
             int row=0;
             while (rs.next()) {
-                System.out.println("row=: "+row++);
-                    System.out.println("Pre_Reg_ID = " + rs.getString("prereg_id"));
-                   // System.out.println((rs.getBinaryStream("demog_detail")));
+                log.info("row=: "+row++);
+                    log.info("Pre_Reg_ID = " + rs.getString("prereg_id"));
+                   // log.info((rs.getBinaryStream("demog_detail")));
                     byte[] b = rs.getBytes("demog_detail");
-                    System.out.println("Encrypted demog_detail=\n"+new String(b));
+                    log.info("Encrypted demog_detail=\n"+new String(b));
                     byte[] b1 = rs.getBinaryStream("demog_detail").toString().getBytes();
-                    //System.out.println(new String(b1));
-                    System.out.println("demog_detail_hash\n"+rs.getString("demog_detail_hash"));
+                    //log.info(new String(b1));
+                    log.info("demog_detail_hash\n"+rs.getString("demog_detail_hash"));
 
-                    System.out.println("account:-" + rs.getString("cr_by"));
+                    log.info("account:-" + rs.getString("cr_by"));
+                byte[] decrypted;
+                byte[] ReEncrypted;
+                Encrypt encrypt = new Encrypt();
                     if(b.length > 0) {
-                        byte[] decrypted = decrypt(b, LocalDateTime.now());
-                                System.out.println("decrypted pre-reg-data-:-\n" + new String(decrypted));
+                        decrypted = decrypt(b, LocalDateTime.now());
+                        log.info("decrypted pre-reg-data-:-\n" + new String(decrypted));
+                        ReEncrypted = encrypt.encrypt(decrypted, LocalDateTime.now());
                     }
 
 
 
             }
-            //System.out.println(i);
+            //log.info(i);
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        return null;
+        return "Success";
     }
 
     public byte[] decrypt(byte[] originalInput, LocalDateTime localDateTime) throws Exception {
@@ -141,7 +145,7 @@ public class ReEncrypt
 //            if (!(response.getBody().getErrors() == null || response.getBody().getErrors().isEmpty())) {
 //                throw new Exception();
 //            }
-            //System.out.println("myresponse\n"+response.getBody().getResponse().getData().getBytes(StandardCharsets.UTF_8));
+            //log.info("myresponse\n"+response.getBody().getResponse().getData().getBytes(StandardCharsets.UTF_8));
             decodedBytes = response.getBody().getResponse().getData().getBytes(StandardCharsets.UTF_8);
             //decodedBytes = Base64.decodeBase64(response.getBody().getResponse().getData().getBytes());
 
@@ -153,7 +157,10 @@ public class ReEncrypt
 
     }
 
+
+
+
     public void start() throws SQLException {
-        System.out.println(getAllReEncrypt());
+        log.info(getAllReEncrypt());
     }
 }
