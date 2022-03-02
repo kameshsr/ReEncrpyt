@@ -96,7 +96,7 @@ public class ReEncrypt
                     System.out.println("Encrypted demog_detail=\n"+new String(b));
                     byte[] b1 = rs.getBinaryStream("demog_detail").toString().getBytes();
                     //System.out.println(new String(b1));
-                    //System.out.println(b.length);
+                    System.out.println("demog_detail_hash\n"+rs.getString("demog_detail_hash"));
 
                     System.out.println("account:-" + rs.getString("cr_by"));
                     if(b.length > 0) {
