@@ -87,23 +87,26 @@ public class ReEncrypt
             String query = "SELECT * FROM applicant_demographic";
             statement = connection.createStatement();
             rs = statement.executeQuery(query);
-            int i=0;
+            int row=0;
             while (rs.next()) {
-                if (i<218) {
+                System.out.println("row=: "+row++);
+                    System.out.println("ID = " + rs.getString("prereg_id"));
                     System.out.println((rs.getBinaryStream("demog_detail")));
                     byte[] b = rs.getBytes("demog_detail");
-                    System.out.println(new String(b));
+                    System.out.println("demog_detail="+new String(b));
                     byte[] b1 = rs.getBinaryStream("demog_detail").toString().getBytes();
                     System.out.println(new String(b1));
-                    System.out.println(b1);
+                    System.out.println(b.length);
 
-                    System.out.println("decrypted data" + rs.getString("cr_by"));
-                    byte[] decrypted = decrypt(b, LocalDateTime.now());
+                    System.out.println("account:-" + rs.getString("cr_by"));
+                    if(b.length > 0) {
+                        byte[] decrypted = decrypt(b, LocalDateTime.now());
+                    }
 
-                }
-                i++;
+                   // System.out.println("decrypted data-" + new String(decrypted));
+
             }
-            System.out.println(i);
+            //System.out.println(i);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -137,7 +140,8 @@ public class ReEncrypt
 //            if (!(response.getBody().getErrors() == null || response.getBody().getErrors().isEmpty())) {
 //                throw new Exception();
 //            }
-            decodedBytes = Base64.decodeBase64(response.getBody().getResponse().getData().getBytes());
+            System.out.println("myresponse"+response.getBody().getResponse().getData());
+            //decodedBytes = Base64.decodeBase64(response.getBody().getResponse().getData().getBytes());
 
         } catch (Exception ex) {
 //            log.info("In decrypt method of CryptoUtil Util for Exception- " + ex.getMessage());
