@@ -4,17 +4,25 @@ import com.ReEncrypt.dto.CryptoManagerRequestDTO;
 import com.ReEncrypt.dto.CryptoManagerResponseDTO;
 import com.ReEncrypt.dto.RequestWrapper;
 import com.ReEncrypt.dto.ResponseWrapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.mosip.kernel.core.exception.IOException;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
+import org.springframework.http.client.ClientHttpRequestExecution;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
+import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import javax.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.Collections;
 
 
 @Component
@@ -28,6 +36,33 @@ public class ReEncrypt
 
     @Value("${cryptoResource.url}")
     public String cryptoResourceUrl;
+
+    @Autowired
+    private ObjectMapper mapper;
+
+    String token = "";
+
+    @PostConstruct
+    public void generateToken() {
+        RequestWrapper<ObjectNode> requestWrapper = new RequestWrapper<>();
+        ObjectNode request = mapper.createObjectNode();
+        request.put("appId", "prereg");
+        request.put("clientId", "mosip-prereg-client");
+        request.put("secretKey", "abc123");
+        requestWrapper.setRequest(request);
+        ResponseEntity<ResponseWrapper> response = restTemplate.postForEntity("https://qa3.mosip.net/v1/authmanager/authenticate/clientidsecretkey", requestWrapper,
+                ResponseWrapper.class);
+        token = response.getHeaders().getFirst("authorization");
+        restTemplate.setInterceptors(Collections.singletonList(new ClientHttpRequestInterceptor() {
+
+            @Override
+            public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution)
+                    throws java.io.IOException {
+                request.getHeaders().add(HttpHeaders.COOKIE, "Authorization=" + token);
+                return execution.execute(request, body);
+            }
+        }));
+    }
 
     public String getAllReEncrypt() throws SQLException {
         Statement statement;
