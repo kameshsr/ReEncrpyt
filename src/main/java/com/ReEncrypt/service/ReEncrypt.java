@@ -90,20 +90,21 @@ public class ReEncrypt
             int row=0;
             while (rs.next()) {
                 System.out.println("row=: "+row++);
-                    System.out.println("ID = " + rs.getString("prereg_id"));
-                    System.out.println((rs.getBinaryStream("demog_detail")));
+                    System.out.println("Pre_Reg_ID = " + rs.getString("prereg_id"));
+                   // System.out.println((rs.getBinaryStream("demog_detail")));
                     byte[] b = rs.getBytes("demog_detail");
-                    System.out.println("demog_detail="+new String(b));
+                    System.out.println("Encrypted demog_detail=\n"+new String(b));
                     byte[] b1 = rs.getBinaryStream("demog_detail").toString().getBytes();
-                    System.out.println(new String(b1));
-                    System.out.println(b.length);
+                    //System.out.println(new String(b1));
+                    //System.out.println(b.length);
 
                     System.out.println("account:-" + rs.getString("cr_by"));
                     if(b.length > 0) {
                         byte[] decrypted = decrypt(b, LocalDateTime.now());
+                                System.out.println("decrypted pre-reg-data-:-\n" + new String(decrypted));
                     }
 
-                   // System.out.println("decrypted data-" + new String(decrypted));
+
 
             }
             //System.out.println(i);
@@ -140,7 +141,8 @@ public class ReEncrypt
 //            if (!(response.getBody().getErrors() == null || response.getBody().getErrors().isEmpty())) {
 //                throw new Exception();
 //            }
-            System.out.println("myresponse"+response.getBody().getResponse().getData());
+            //System.out.println("myresponse\n"+response.getBody().getResponse().getData().getBytes(StandardCharsets.UTF_8));
+            decodedBytes = response.getBody().getResponse().getData().getBytes(StandardCharsets.UTF_8);
             //decodedBytes = Base64.decodeBase64(response.getBody().getResponse().getData().getBytes());
 
         } catch (Exception ex) {
