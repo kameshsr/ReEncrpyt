@@ -67,7 +67,7 @@ public class ReEncrypt
 
     public String getAllReEncrypt() throws SQLException {
         Statement statement;
-        log.info("PostgreSQL JDBC Connection Testing ~");
+        System.out.println("PostgreSQL JDBC Connection Testing ~");
 
 
         try {
@@ -89,31 +89,31 @@ public class ReEncrypt
             statement = connection.createStatement();
             rs = statement.executeQuery(query);
             int row=0;
-            while (rs.next() && row++<5) {
-                log.info("row=: "+row++);
-                    log.info("Pre_Reg_ID = " + rs.getString("prereg_id"));
-                   // log.info((rs.getBinaryStream("demog_detail")));
+            while (rs.next() ) {
+                System.out.println("row=: "+row++);
+                    System.out.println("Pre_Reg_ID = " + rs.getString("prereg_id"));
+                   // System.out.println((rs.getBinaryStream("demog_detail")));
                     byte[] b = rs.getBytes("demog_detail");
-                    log.info("Encrypted demog_detail=\n"+new String(b));
+                    System.out.println("Encrypted demog_detail=\n"+new String(b));
                     byte[] b1 = rs.getBinaryStream("demog_detail").toString().getBytes();
-                    //log.info(new String(b1));
-                    log.info("demog_detail_hash\n"+rs.getString("demog_detail_hash"));
+                    //System.out.println(new String(b1));
+                    System.out.println("demog_detail_hash\n"+rs.getString("demog_detail_hash"));
 
-                    log.info("account:-" + rs.getString("cr_by"));
+                    System.out.println("account:-" + rs.getString("cr_by"));
                 byte[] decrypted;
                 byte[] ReEncrypted;
-                Encrypt encrypt = new Encrypt();
+
                     if(b.length > 0) {
                         decrypted = decrypt(b, LocalDateTime.now());
-                        log.info("decrypted pre-reg-data-:-\n" + new String(decrypted));
-                        ReEncrypted = encrypt.encrypt(decrypted, LocalDateTime.now());
-//                        log.info("ReEncrypted pre-reg-data-:-\n" + new String(ReEncrypted));
+                        System.out.println("decrypted pre-reg-data-:-\n" + new String(decrypted));
+                        ReEncrypted = encrypt(decrypted, LocalDateTime.now());
+                        System.out.println("ReEncrypted pre-reg-data-:-\n" + new String(ReEncrypted));
                     }
 
 
 
             }
-            //log.info(i);
+            //System.out.println(i);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -122,7 +122,7 @@ public class ReEncrypt
     }
 
     public byte[] decrypt(byte[] originalInput, LocalDateTime localDateTime) throws Exception {
-//        log.info("In decrypt method of CryptoUtil service ");
+//        System.out.println("In decrypt method of CryptoUtil service ");
         ResponseEntity<ResponseWrapper<CryptoManagerResponseDTO>> response = null;
         byte[] decodedBytes = null;
         generateToken("https://qa3.mosip.net");
@@ -140,7 +140,7 @@ public class ReEncrypt
             headers.setContentType(MediaType.APPLICATION_JSON);
 
             HttpEntity<RequestWrapper<CryptoManagerRequestDTO>> request = new HttpEntity<>(requestKernel, headers);
-//            log.info(
+//            System.out.println(
 //                    "In decrypt method of CryptoUtil service cryptoResourceUrl: " + cryptoResourceUrl + "/decrypt");
             response = restTemplate.exchange(cryptoResourceUrl + "/decrypt", HttpMethod.POST, request,
                     new ParameterizedTypeReference<ResponseWrapper<CryptoManagerResponseDTO>>() {
@@ -148,12 +148,12 @@ public class ReEncrypt
 //            if (!(response.getBody().getErrors() == null || response.getBody().getErrors().isEmpty())) {
 //                throw new Exception();
 //            }
-            //log.info("myresponse\n"+response.getBody().getResponse().getData().getBytes(StandardCharsets.UTF_8));
+            //System.out.println("myresponse\n"+response.getBody().getResponse().getData().getBytes(StandardCharsets.UTF_8));
             decodedBytes = response.getBody().getResponse().getData().getBytes(StandardCharsets.UTF_8);
             //decodedBytes = Base64.decodeBase64(response.getBody().getResponse().getData().getBytes());
 
         } catch (Exception ex) {
-//            log.info("In decrypt method of CryptoUtil Util for Exception- " + ex.getMessage());
+//            System.out.println("In decrypt method of CryptoUtil Util for Exception- " + ex.getMessage());
             throw ex;
         }
         return decodedBytes;
@@ -161,7 +161,7 @@ public class ReEncrypt
     }
 
     public byte[] encrypt(byte[] originalInput, LocalDateTime localDateTime) {
-        log.info("sessionId", "idType", "id", "In encrypt method of CryptoUtil service ");
+        //System.out.println("sessionId", "idType", "id", "In encrypt method of CryptoUtil service ");
         generateToken("https://qa-upgrade.mosip.net");
         ResponseEntity<ResponseWrapper<CryptoManagerResponseDTO>> response = null;
         byte[] encryptedBytes = null;
@@ -178,12 +178,12 @@ public class ReEncrypt
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<RequestWrapper<CryptoManagerRequestDTO>> request = new HttpEntity<>(requestKernel, headers);
-            log.info("sessionId", "idType", "id",
-                    "In encrypt method of CryptoUtil service cryptoResourceUrl: " + "/encrypt");
+            //System.out.println("sessionId", "idType", "id",
+                    //"In encrypt method of CryptoUtil service cryptoResourceUrl: " + "/encrypt");
             response = restTemplate.exchange( "https://qa-upgrade.mosip.net/v1/keymanager/encrypt", HttpMethod.POST, request,
                     new ParameterizedTypeReference<ResponseWrapper<CryptoManagerResponseDTO>>() {
                     });
-            log.info("sessionId", "idType", "id", "encrypt response of " + response);
+            //.out.println("sessionId", "idType", "id", "encrypt response of " + response);
 
 //            if (!(response.getBody().getErrors() == null || response.getBody().getErrors().isEmpty())) {
 //                throw new EncryptionFailedException(response.getBody().getErrors(), null);
@@ -204,6 +204,6 @@ public class ReEncrypt
 
 
     public void start() throws SQLException {
-        log.info(getAllReEncrypt());
+        System.out.println(getAllReEncrypt());
     }
 }
