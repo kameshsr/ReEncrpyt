@@ -22,7 +22,7 @@ import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.util.Collections;
 
-@Component
+//@Component
 public class Encrypt {
 
     private static final Logger log = KeymanagerLogger.getLogger(ReEncrypt.class);
@@ -38,7 +38,7 @@ public class Encrypt {
 
     String token1 = "";
 
-    @PostConstruct
+    //@PostConstruct
     public void generateToken() {
         RequestWrapper<ObjectNode> requestWrapper = new RequestWrapper<>();
         ObjectNode request = mapper.createObjectNode();
@@ -81,6 +81,7 @@ public class Encrypt {
             HttpEntity<RequestWrapper<CryptoManagerRequestDTO>> request = new HttpEntity<>(requestKernel, headers);
             log.info("sessionId", "idType", "id",
                     "In encrypt method of CryptoUtil service cryptoResourceUrl: " + "/encrypt");
+            System.out.println("request"+request);
             response = restTemplate1.exchange( "https://qa-upgrade.mosip.net/v1/keymanager/encrypt", HttpMethod.POST, request,
                     new ParameterizedTypeReference<ResponseWrapper<CryptoManagerResponseDTO>>() {
                     });
