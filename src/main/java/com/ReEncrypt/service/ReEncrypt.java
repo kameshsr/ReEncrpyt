@@ -149,7 +149,8 @@ public class ReEncrypt
 //                throw new Exception();
 //            }
             //System.out.println("myresponse\n"+response.getBody().getResponse().getData().getBytes(StandardCharsets.UTF_8));
-            decodedBytes = response.getBody().getResponse().getData().getBytes(StandardCharsets.UTF_8);
+//            decodedBytes = response.getBody().getResponse().getData().getBytes(StandardCharsets.UTF_8);
+            decodedBytes = response.getBody().getResponse().getData().getBytes();
             //decodedBytes = Base64.decodeBase64(response.getBody().getResponse().getData().getBytes());
 
         } catch (Exception ex) {
@@ -166,10 +167,11 @@ public class ReEncrypt
         ResponseEntity<ResponseWrapper<CryptoManagerResponseDTO>> response = null;
         byte[] encryptedBytes = null;
         try {
-            String encodedBytes = io.mosip.kernel.core.util.CryptoUtil.encodeToURLSafeBase64(originalInput);
+            //String encodedBytes = io.mosip.kernel.core.util.CryptoUtil.encodeToURLSafeBase64(originalInput);
             CryptoManagerRequestDTO dto = new CryptoManagerRequestDTO();
             dto.setApplicationId("PRE_REGISTRATION");
-            dto.setData(encodedBytes);
+            //dto.setData(originalInput.toString());
+            dto.setData(new String(originalInput, StandardCharsets.UTF_8));
             dto.setReferenceId("INDIVIDUAL");
             dto.setTimeStamp(localDateTime);
             dto.setPrependThumbprint(false);
