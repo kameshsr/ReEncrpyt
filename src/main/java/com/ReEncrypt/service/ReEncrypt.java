@@ -113,13 +113,13 @@ public class ReEncrypt
         }));
     }
 
-    public String getAllReEncrypt() throws SQLException {
+    public String getAllReEncrypt(String query) throws SQLException {
         Statement statement;
         System.out.println("PostgreSQL JDBC Connection Testing ~");
 
         try (Connection connection =getConnection()) {
             ResultSet rs = null;
-            String query = "SELECT * FROM applicant_demographic";
+
             statement = connection.createStatement();
             rs = statement.executeQuery(query);
             int row=0;
@@ -237,9 +237,9 @@ public class ReEncrypt
 
 
     public void start() throws SQLException {
-        System.out.println(getAllReEncrypt());
-//        String query = "SELECT * FROM applicant_demographic";
-//        List<Map<String, Object>> DemographicData=getTableValue(query);
+        String query = "SELECT * FROM applicant_demographic";
+        System.out.println(getAllReEncrypt(query));
+
 
     }
 
