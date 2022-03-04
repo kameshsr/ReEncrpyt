@@ -50,6 +50,15 @@ public class ReEncrypt
     @Value("${spring.datasource.password}")
     public String dataSourcePassword;
 
+    @Value("${appId}")
+    public String appId;
+
+    @Value("${clientId}")
+    public String clientId;
+
+    @Value("${secretKey}")
+    public String secretKey;
+
     @Autowired
     private ObjectMapper mapper;
 
@@ -86,9 +95,9 @@ public class ReEncrypt
     public void generateToken(String url) {
         RequestWrapper<ObjectNode> requestWrapper = new RequestWrapper<>();
         ObjectNode request = mapper.createObjectNode();
-        request.put("appId", "prereg");
-        request.put("clientId", "mosip-prereg-client");
-        request.put("secretKey", "abc123");
+        request.put("appId", appId);
+        request.put("clientId", clientId);
+        request.put("secretKey", secretKey);
         requestWrapper.setRequest(request);
         ResponseEntity<ResponseWrapper> response = restTemplate.postForEntity(url+"/v1/authmanager/authenticate/clientidsecretkey", requestWrapper,
                 ResponseWrapper.class);
@@ -120,18 +129,15 @@ public class ReEncrypt
                    // System.out.println((rs.getBinaryStream("demog_detail")));
                     byte[] b = rs.getBytes("demog_detail");
                     System.out.println("Encrypted demog_detail=\n"+new String(b));
-                    byte[] b1 = rs.getBinaryStream("demog_detail").toString().getBytes();
-                    //System.out.println(new String(b1));
+
                     System.out.println("demog_detail_hash\n"+rs.getString("demog_detail_hash"));
 
                     System.out.println("account:-" + rs.getString("cr_by"));
-                byte[] decrypted;
-                byte[] ReEncrypted;
 
                     if(b.length > 0) {
-                        decrypted = decrypt(b, LocalDateTime.now());
+                        byte[] decrypted = decrypt(b, LocalDateTime.now());
                         System.out.println("decrypted pre-reg-data-:-\n" + new String(decrypted));
-                        ReEncrypted = encrypt(decrypted, LocalDateTime.now());
+                        byte[] ReEncrypted = encrypt(decrypted, LocalDateTime.now());
                         System.out.println("ReEncrypted pre-reg-data-:-\n" + new String(ReEncrypted));
                     }
 
