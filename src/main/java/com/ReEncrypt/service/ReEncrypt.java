@@ -38,6 +38,18 @@ public class ReEncrypt
     @Value("${cryptoResource.url}")
     public String cryptoResourceUrl;
 
+    @Value("${spring.datasource.driverClassName}")
+    public String driverClassName;
+
+    @Value("${spring.datasource.url}")
+    public String datasourceUrl;
+
+    @Value("${spring.datasource.username}")
+    public String datasourceUserName;
+
+    @Value("${spring.datasource.password}")
+    public String dataSourcePassword;
+
     @Autowired
     private ObjectMapper mapper;
 
@@ -45,6 +57,31 @@ public class ReEncrypt
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    // to get jdbc connection
+    public Connection getConnection() throws SQLException {
+        Connection connection = null;
+        try {
+
+            Class.forName(driverClassName);
+
+        } catch (ClassNotFoundException e) {
+            System.err.println("Unable to find the PostgreSQL JDBC Driver!");
+            e.printStackTrace();
+            return null;
+        }
+        try {
+            connection =
+                    DriverManager.getConnection(datasourceUrl,
+                            datasourceUserName, dataSourcePassword);
+        }
+        catch (Exception e){
+            System.out.println(e.getMessage());
+        }
+
+        return connection;
+
+    }
 
     public void generateToken(String url) {
         RequestWrapper<ObjectNode> requestWrapper = new RequestWrapper<>();
@@ -71,22 +108,7 @@ public class ReEncrypt
         Statement statement;
         System.out.println("PostgreSQL JDBC Connection Testing ~");
 
-
-        try {
-
-            Class.forName("org.postgresql.Driver");
-
-        } catch (ClassNotFoundException e) {
-            System.err.println("Unable to find the PostgreSQL JDBC Driver!");
-            e.printStackTrace();
-            return null;
-        }
-
-
-        try (
-                Connection connection =
-                     DriverManager.getConnection("jdbc:postgresql://qa3.mosip.net:30090/mosip_prereg",
-                             "postgres", "mosip123")) {
+        try (Connection connection =getConnection()) {
             ResultSet rs = null;
             String query = "SELECT * FROM applicant_demographic";
             statement = connection.createStatement();
@@ -209,9 +231,9 @@ public class ReEncrypt
 
 
     public void start() throws SQLException {
-        //System.out.println(getAllReEncrypt());
-        String query = "SELECT * FROM applicant_demographic";
-        List<Map<String, Object>> DemographicData=getTableValue(query);
+        System.out.println(getAllReEncrypt());
+//        String query = "SELECT * FROM applicant_demographic";
+//        List<Map<String, Object>> DemographicData=getTableValue(query);
 
     }
 
