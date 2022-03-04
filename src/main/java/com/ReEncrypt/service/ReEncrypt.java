@@ -227,6 +227,16 @@ public class ReEncrypt
                     Map.Entry<String, Object> entry = it.next();
                     String key = entry.getKey();
                     Object value = entry.getValue();
+                    // convert value to byte
+                    try{
+                        byte[] encryptedDemogDetail = value.toString().getBytes();
+                        
+                    }
+                    catch (Exception ex){
+                        System.out.println("In getTableValue method of CryptoUtil Util for Exception- " + ex.getMessage());
+                    }
+
+
                     System.out.println(key + " = " + value);
                 }
 
