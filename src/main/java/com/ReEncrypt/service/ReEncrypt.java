@@ -220,24 +220,27 @@ public class ReEncrypt
         List<Map<String, Object>> DemographicData = jdbcTemplate.queryForList(query);
 
         if (DemographicData!=null && !DemographicData.isEmpty()) {
-
+            int row=0;
             for (Map<String, Object> demographicData : DemographicData) {
-
+                if(row++>5)
+                    break;
                 for (Iterator<Map.Entry<String, Object>> it = demographicData.entrySet().iterator(); it.hasNext();) {
                     Map.Entry<String, Object> entry = it.next();
                     String key = entry.getKey();
                     Object value = entry.getValue();
                     // convert value to byte
-                    try{
-                        byte[] encryptedDemogDetail = value.toString().getBytes();
-                        
-                    }
-                    catch (Exception ex){
-                        System.out.println("In getTableValue method of CryptoUtil Util for Exception- " + ex.getMessage());
-                    }
+                    if(key.equalsIgnoreCase("demog_detail")) {
+                        try {
+                            byte[] encryptedDemogDetail = value.toString().getBytes();
+                            //byte[] decryptedDemogDetail = decrypt(encryptedDemogDetail, LocalDateTime.now());
+                            System.out.println(encryptedDemogDetail);
+                        } catch (Exception ex) {
+                            System.out.println("In getTableValue method of CryptoUtil Util for Exception- " + ex.getMessage());
+                        }
 
 
-                    System.out.println(key + " = " + value);
+                        System.out.println(key + " = " + value);
+                    }
                 }
 
                 System.out.println();
