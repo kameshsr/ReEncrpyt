@@ -6,9 +6,6 @@ import com.ReEncrypt.dto.RequestWrapper;
 import com.ReEncrypt.dto.ResponseWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.mosip.kernel.core.exception.ExceptionUtils;
-import io.mosip.kernel.core.logger.spi.Logger;
-import io.mosip.kernel.keymanagerservice.logger.KeymanagerLogger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -16,21 +13,24 @@ import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import javax.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 
 @Component
 public class ReEncrypt
 {
 
-    private static final Logger log = KeymanagerLogger.getLogger(ReEncrypt.class);
+    //private static final Logger log = KeymanagerLogger.getLogger(ReEncrypt.class);
 
     @Autowired
     RestTemplate restTemplate;
@@ -43,7 +43,9 @@ public class ReEncrypt
 
     String token = "";
 
-    //@PostConstruct
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     public void generateToken(String url) {
         RequestWrapper<ObjectNode> requestWrapper = new RequestWrapper<>();
         ObjectNode request = mapper.createObjectNode();
@@ -81,7 +83,8 @@ public class ReEncrypt
         }
 
 
-        try (Connection connection =
+        try (
+                Connection connection =
                      DriverManager.getConnection("jdbc:postgresql://qa3.mosip.net:30090/mosip_prereg",
                              "postgres", "mosip123")) {
             ResultSet rs = null;
@@ -193,9 +196,9 @@ public class ReEncrypt
             encryptedBytes = response.getBody().getResponse().getData().getBytes();
 
         } catch (Exception ex) {
-            log.debug("sessionId", "idType", "id", ExceptionUtils.getStackTrace(ex));
-            log.error("sessionId", "idType", "id",
-                    "In encrypt method of CryptoUtil Util for Exception- " + ex.getMessage());
+            //log.debug("sessionId", "idType", "id", ExceptionUtils.getStackTrace(ex));
+            //log.error("sessionId", "idType", "id",
+                    //"In encrypt method of CryptoUtil Util for Exception- " + ex.getMessage());
             throw ex;
         }
         return encryptedBytes;
@@ -206,6 +209,32 @@ public class ReEncrypt
 
 
     public void start() throws SQLException {
-        System.out.println(getAllReEncrypt());
+        //System.out.println(getAllReEncrypt());
+        String query = "SELECT * FROM applicant_demographic";
+        List<Map<String, Object>> DemographicData=getTableValue(query);
+
+    }
+
+    private List<Map<String, Object>> getTableValue(String query) {
+
+        List<Map<String, Object>> DemographicData = jdbcTemplate.queryForList(query);
+
+        if (DemographicData!=null && !DemographicData.isEmpty()) {
+
+            for (Map<String, Object> demographicData : DemographicData) {
+
+                for (Iterator<Map.Entry<String, Object>> it = demographicData.entrySet().iterator(); it.hasNext();) {
+                    Map.Entry<String, Object> entry = it.next();
+                    String key = entry.getKey();
+                    Object value = entry.getValue();
+                    System.out.println(key + " = " + value);
+                }
+
+                System.out.println();
+
+            }
+
+        }
+        return DemographicData;
     }
 }

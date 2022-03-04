@@ -1,8 +1,6 @@
 package com.ReEncrypt;
 
 import com.ReEncrypt.service.ReEncrypt;
-import io.mosip.kernel.core.logger.spi.Logger;
-import io.mosip.kernel.keymanagerservice.logger.KeymanagerLogger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -16,7 +14,7 @@ import org.springframework.web.client.RestTemplate;
 
 public class ReEncrpytApplication implements CommandLineRunner {
 
-    private static final Logger LOGGER = KeymanagerLogger.getLogger(ReEncrpytApplication.class);
+    //private static final Logger LOGGER = KeymanagerLogger.getLogger(ReEncrpytApplication.class);
 
     @Autowired
     ReEncrypt reEncrypt;
@@ -34,8 +32,8 @@ public class ReEncrpytApplication implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
-        LOGGER.info(" started......" );
+        //LOGGER.info(" started......" );
         reEncrypt.start();
-        LOGGER.info("  Completed......" );
+        //LOGGER.info("  Completed......" );
     }
 }
