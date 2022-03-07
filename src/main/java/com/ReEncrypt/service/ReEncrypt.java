@@ -14,7 +14,6 @@ import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -36,17 +35,29 @@ public class ReEncrypt
     @Value("${cryptoResource.url}")
     public String cryptoResourceUrl;
 
-    @Value("${spring.datasource.driverClassName}")
-    public String driverClassName;
+    @Value("${sourceDriverClassName}")
+    public String sourceDriverClassName;
 
-    @Value("${spring.datasource.url}")
-    public String datasourceUrl;
+    @Value("${sourceDatasourceUrl}")
+    public String sourceDatasourceUrl;
 
-    @Value("${spring.datasource.username}")
-    public String datasourceUserName;
+    @Value("${sourceDatasourceUserName}")
+    public String sourceDatasourceUserName;
 
-    @Value("${spring.datasource.password}")
-    public String dataSourcePassword;
+    @Value("${sourceDataSourcePassword}")
+    public String sourceDataSourcePassword;
+
+    @Value("${targetDriverClassName}")
+    public String targetDriverClassName;
+
+    @Value("${targetDatasourceUrl}")
+    public String targetDatasourceUrl;
+
+    @Value("${targetDatasourceUserName}")
+    public String targetDatasourceUserName;
+
+    @Value("${targetDataSourcePassword}")
+    public String targetDataSourcePassword;
 
     @Value("${appId}")
     public String appId;
@@ -68,28 +79,31 @@ public class ReEncrypt
 
     String token = "";
 
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
+    public Connection sourceDatabaseConnection =null;
 
-    // to get jdbc connection
+    public Connection targetDatabaseConnection =null;
+
+
     public Connection getConnection() throws SQLException {
-        Connection connection = null;
+        sourceDatabaseConnection = null;
         try {
-            Class.forName(driverClassName);
+            Class.forName(sourceDriverClassName);
         } catch (ClassNotFoundException e) {
             logger.error("Error while loading driver class", e);
             e.printStackTrace();
             return null;
         }
         try {
-            connection =
-                    DriverManager.getConnection(datasourceUrl,
-                            datasourceUserName, dataSourcePassword);
+            sourceDatabaseConnection =
+                    DriverManager.getConnection(sourceDatasourceUrl,
+                            sourceDatasourceUserName, sourceDataSourcePassword);
+            targetDatabaseConnection = DriverManager.getConnection(targetDatasourceUrl,
+                    targetDatasourceUserName, targetDataSourcePassword);
         }
         catch (Exception e){
             System.out.println(e.getMessage());
         }
-        return connection;
+        return sourceDatabaseConnection;
     }
 
     public void generateToken(String url) {
@@ -120,7 +134,8 @@ public class ReEncrypt
             Statement statement = connection.createStatement();
             ResultSet rs = statement.executeQuery(query);
             int row = 0;
-            while (rs.next()) {
+            while (rs.next()  && row < 10) {
+
                 logger.info("row=: " + row++);
                 logger.info("Pre_Reg_ID = " + rs.getString("prereg_id"));
                 byte[] demog_details = rs.getBytes("demog_detail");
@@ -132,6 +147,30 @@ public class ReEncrypt
                     logger.info("decrypted pre-reg-data-:-\n" + new String(decrypted));
                     byte[] ReEncrypted = encrypt(decrypted, LocalDateTime.now(), encryptBaseUrl);
                     logger.info("ReEncrypted pre-reg-data-:-\n" + new String(ReEncrypted));
+
+                    try {
+//                        String sql = "UPDATE applicant_demographic " +
+//                                "SET demog_detail =" + ReEncrypted + "WHERE prereg_id =" +
+//                                rs.getString("prereg_id");
+                        String updateQuery = "update applicant_demographic set demog_detail=? where prereg_id=?";
+                        PreparedStatement stmt = targetDatabaseConnection.prepareStatement(updateQuery);
+                            stmt.setBytes(1, ReEncrypted);
+                            stmt.setString(2, rs.getString("prereg_id"));
+                            stmt.executeUpdate();
+
+                            System.out.println("Updated");
+                            System.out.println("after update data\n"+rs.getString("demog_detail"));
+                        //stmt.executeUpdate(sql);
+//                        ResultSet destinationResultSet = statement.executeQuery(query);
+//                        while (destinationResultSet.next() && row++ < 5) {
+//                            //Display values
+//                           System.out.println("prereg_id = " + destinationResultSet.getString("prereg_id"));
+//                           System.out.println("demog_detail = \n" + destinationResultSet.getString("demog_detail"));
+//                        }
+                        //destinationResultSet.close();
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
             logger.info("Total rows=: " + row);
@@ -200,6 +239,18 @@ public class ReEncrypt
 
     public void start() throws SQLException {
         String query = "SELECT * FROM applicant_demographic";
-        System.out.println(reEncryptDatabaseValues(query));
+        //System.out.println(reEncryptDatabaseValues(query));
+
+        try (Connection connection =getConnection()) {
+            Statement statement = connection.createStatement();
+            ResultSet rs = statement.executeQuery(query);
+            int row = 0;
+            while (rs.next() && row++ < 15) {
+                System.out.println(new String(rs.getBytes("demog_detail")));
+            }
+            }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
