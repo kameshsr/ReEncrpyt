@@ -113,7 +113,7 @@ public class ReEncrypt
         }));
     }
 
-    public String getAllReEncrypt(String query) throws SQLException {
+    public String reEncryptDatabaseValues(String query) throws SQLException {
         logger.info("PostgreSQL JDBC Connection Testing ~");
 
         try (Connection connection =getConnection()) {
@@ -200,6 +200,6 @@ public class ReEncrypt
 
     public void start() throws SQLException {
         String query = "SELECT * FROM applicant_demographic";
-        System.out.println(getAllReEncrypt(query));
+        System.out.println(reEncryptDatabaseValues(query));
     }
 }
