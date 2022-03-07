@@ -1,6 +1,7 @@
 package com.ReEncrypt;
 
 import com.ReEncrypt.service.ReEncrypt;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -14,7 +15,7 @@ import org.springframework.web.client.RestTemplate;
 
 public class ReEncrpytApplication implements CommandLineRunner {
 
-    //private static final Logger LOGGER = KeymanagerLogger.getLogger(ReEncrpytApplication.class);
+    Logger logger = org.slf4j.LoggerFactory.getLogger(ReEncrpytApplication.class);
 
     @Autowired
     ReEncrypt reEncrypt;
@@ -32,8 +33,8 @@ public class ReEncrpytApplication implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
-        //LOGGER.info(" started......" );
+        logger.info(" started......" );
         reEncrypt.start();
-        //LOGGER.info("  Completed......" );
+        logger.info("  Completed......" );
     }
 }
