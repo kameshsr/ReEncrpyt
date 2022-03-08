@@ -7,6 +7,7 @@ import com.ReEncrypt.dto.ResponseWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.mosip.kernel.core.util.DateUtils;
+import io.mosip.kernel.core.util.HMACUtils;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,13 +25,9 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.TimeZone;
 
-import io.mosip.kernel.core.util.HMACUtils;
-import io.mosip.kernel.core.util.HashUtils;
-
 
 @Component
-public class ReEncrypt
-{
+public class ReEncrypt {
 
     Logger logger = org.slf4j.LoggerFactory.getLogger(ReEncrypt.class);
 
@@ -84,10 +81,13 @@ public class ReEncrypt
 
     String token = "";
 
-    public Connection sourceDatabaseConnection =null;
+    public Connection sourceDatabaseConnection = null;
 
-    public Connection targetDatabaseConnection =null;
+    public Connection targetDatabaseConnection = null;
 
+    public int row;
+
+    public int successFullRow;
 
     public Connection getConnection() throws SQLException {
         sourceDatabaseConnection = null;
@@ -104,8 +104,7 @@ public class ReEncrypt
                             sourceDatasourceUserName, sourceDataSourcePassword);
             targetDatabaseConnection = DriverManager.getConnection(targetDatasourceUrl,
                     targetDatasourceUserName, targetDataSourcePassword);
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             logger.error(e.getMessage());
         }
         return sourceDatabaseConnection;
@@ -118,7 +117,7 @@ public class ReEncrypt
         request.put("clientId", clientId);
         request.put("secretKey", secretKey);
         requestWrapper.setRequest(request);
-        ResponseEntity<ResponseWrapper> response = restTemplate.postForEntity(url+"/v1/authmanager/authenticate/clientidsecretkey", requestWrapper,
+        ResponseEntity<ResponseWrapper> response = restTemplate.postForEntity(url + "/v1/authmanager/authenticate/clientidsecretkey", requestWrapper,
                 ResponseWrapper.class);
         token = response.getHeaders().getFirst("authorization");
         restTemplate.setInterceptors(Collections.singletonList(new ClientHttpRequestInterceptor() {
@@ -135,11 +134,11 @@ public class ReEncrypt
     public String reEncryptDatabaseValues(String query) throws SQLException {
         logger.info("PostgreSQL JDBC Connection Testing ~");
 
-        try (Connection connection =getConnection()) {
+        try (Connection connection = getConnection()) {
             Statement statement = connection.createStatement();
             ResultSet rs = statement.executeQuery(query);
-            int row = 0;
-            while (rs.next()) {
+            row = 0;
+            while (rs.next() && row <= 5) {
                 logger.info("row=: " + row++);
                 logger.info("Pre_Reg_ID = " + rs.getString("prereg_id"));
                 byte[] demog_details = rs.getBytes("demog_detail");
@@ -148,7 +147,7 @@ public class ReEncrypt
                 logger.info("account:-" + rs.getString("cr_by"));
                 if (demog_details.length > 0) {
                     byte[] decrypted = decrypt(demog_details, LocalDateTime.now(), decryptBaseUrl);
-                    if(decrypted == null) {
+                    if (decrypted == null) {
                         logger.info("Decrypted data is null");
                         continue;
                     }
@@ -156,18 +155,42 @@ public class ReEncrypt
                     byte[] ReEncrypted = encrypt(decrypted, LocalDateTime.now(), encryptBaseUrl);
                     logger.info("ReEncrypted pre-reg-data-:-\n" + new String(ReEncrypted));
 
-                    try {String updateQuery =
+                    try {
+                        String updateQuery =
                                 "update applicant_demographic set demog_detail=?, demog_detail_hash=?, encrypted_dtimes=?::timestamp where prereg_id=?";
                         PreparedStatement stmt = targetDatabaseConnection.prepareStatement(updateQuery);
-                            stmt.setBytes(1, ReEncrypted);
-
-                            stmt.setString(2, hashUtill(ReEncrypted));
-
+                        stmt.setBytes(1, ReEncrypted);
+                        stmt.setString(2, hashUtill(ReEncrypted));
                         LocalDateTime encryptionDateTime = DateUtils.getUTCCurrentDateTime();
-                            stmt.setTimestamp(3, Timestamp.valueOf(encryptionDateTime));
-                            stmt.setString(4, rs.getString("prereg_id"));
-                            stmt.executeUpdate();
-                            logger.info("Updated");
+                        stmt.setTimestamp(3, Timestamp.valueOf(encryptionDateTime));
+                        stmt.setString(4, rs.getString("prereg_id"));
+                        int checkUpdateStatus = stmt.executeUpdate();
+                        if (checkUpdateStatus > 0) {
+                            logger.info("successfully updated");
+                        } else {
+                            logger.info("not updated");
+                            String insertQuery = "INSERT INTO applicant_demographic(prereg_id,demog_detail,demog_detail_hash," +
+                                    "encrypted_dtimes, status_code, lang_code, cr_appuser_id, cr_by, cr_dtimes, upd_by, upd_dtimes) "
+                                    + "VALUES(?,?,?,?::timestamp,?,?,?,?,?::timestamp,?,?::timestamp)";
+                            PreparedStatement stmt1 = targetDatabaseConnection.prepareStatement(insertQuery);
+                            stmt1.setString(1, rs.getString("prereg_id"));
+                            stmt1.setBytes(2, ReEncrypted);
+                            stmt1.setString(3, hashUtill(ReEncrypted));
+                            stmt1.setString(4, String.valueOf(Timestamp.valueOf(encryptionDateTime)));
+                            stmt1.setString(5, rs.getString("status_code"));
+                            stmt1.setString(6, rs.getString("lang_code"));
+                            stmt1.setString(7, rs.getString("cr_appuser_id"));
+                            stmt1.setString(8, rs.getString("cr_by"));
+                            stmt1.setString(9, rs.getString("cr_dtimes"));
+                            stmt1.setString(10, rs.getString("upd_by"));
+                            stmt1.setString(11, rs.getString("upd_dtimes"));
+                            int checkInsertStatus = stmt1.executeUpdate();
+                            if (checkInsertStatus > 0) {
+                                logger.info("successfully inserted");
+
+                            }
+                        }
+                        successFullRow++;
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }
@@ -200,7 +223,7 @@ public class ReEncrypt
             response = restTemplate.exchange(cryptoResourceUrl + "/decrypt", HttpMethod.POST, request,
                     new ParameterizedTypeReference<ResponseWrapper<CryptoManagerResponseDTO>>() {
                     });
-            logger.info("myresponse\n"+response.getBody().getResponse().getData().getBytes(StandardCharsets.UTF_8));
+            logger.info("myresponse\n" + response.getBody().getResponse().getData().getBytes(StandardCharsets.UTF_8));
             decodedBytes = response.getBody().getResponse().getData().getBytes();
         } catch (Exception ex) {
             logger.error("Error in decrypt method of CryptoUtil service " + ex.getMessage());
@@ -227,7 +250,7 @@ public class ReEncrypt
             HttpEntity<RequestWrapper<CryptoManagerRequestDTO>> request = new HttpEntity<>(requestKernel, headers);
             logger.info("sessionId", "idType", "id",
                     "In encrypt method of CryptoUtil service cryptoResourceUrl: " + "/encrypt");
-            response = restTemplate.exchange( encryptBaseUrl+"/v1/keymanager/encrypt", HttpMethod.POST, request,
+            response = restTemplate.exchange(encryptBaseUrl + "/v1/keymanager/encrypt", HttpMethod.POST, request,
                     new ParameterizedTypeReference<ResponseWrapper<CryptoManagerResponseDTO>>() {
                     });
             encryptedBytes = response.getBody().getResponse().getData().getBytes();
@@ -239,14 +262,16 @@ public class ReEncrypt
 
     public void start() throws SQLException {
         String query = "SELECT * FROM applicant_demographic";
-        System.out.println(reEncryptDatabaseValues(query));
+        //System.out.println(reEncryptDatabaseValues(query));
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
         printTableValues(query);
+        logger.info("Total rows: " + row);
+        logger.info("Successfully " + successFullRow + " updated");
     }
 
     private void printTableValues(String query) {
-        try (Connection connection =getConnection()) {
-            Statement statement = connection.createStatement();
+        try (Connection connection = getConnection()) {
+            Statement statement = targetDatabaseConnection.createStatement();
             ResultSet rs = statement.executeQuery(query);
             int row = 0;
             Timestamp timestamp = new Timestamp(System.currentTimeMillis());
@@ -256,8 +281,7 @@ public class ReEncrypt
                 logger.info(rs.getString("demog_detail_hash"));
                 logger.info(String.valueOf(rs.getTimestamp("encrypted_dtimes")));
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
