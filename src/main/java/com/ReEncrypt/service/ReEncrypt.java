@@ -6,6 +6,7 @@ import com.ReEncrypt.dto.RequestWrapper;
 import com.ReEncrypt.dto.ResponseWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.mosip.kernel.core.util.DateUtils;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +22,10 @@ import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.TimeZone;
+
+import io.mosip.kernel.core.util.HMACUtils;
+import io.mosip.kernel.core.util.HashUtils;
 
 
 @Component
@@ -134,7 +139,7 @@ public class ReEncrypt
             Statement statement = connection.createStatement();
             ResultSet rs = statement.executeQuery(query);
             int row = 0;
-            while (rs.next()  && row < 10) {
+            while (rs.next()  && row < 33) {
 
                 logger.info("row=: " + row++);
                 logger.info("Pre_Reg_ID = " + rs.getString("prereg_id"));
@@ -154,12 +159,19 @@ public class ReEncrypt
 
                     try {
 //                        String sql = "UPDATE applicant_demographic " +
-//                                "SET demog_detail =" + ReEncrypted + "WHERE prereg_id =" +
+//                                "SET demog_detail =" + ReEncrypted + "WHERE prereg_id =" + ?::date
 //                                rs.getString("prereg_id");
-                        String updateQuery = "update applicant_demographic set demog_detail=? where prereg_id=?";
+                        String updateQuery =
+                                "update applicant_demographic set demog_detail=?, demog_detail_hash=?, encrypted_dtimes=?::timestamp where prereg_id=?";
                         PreparedStatement stmt = targetDatabaseConnection.prepareStatement(updateQuery);
                             stmt.setBytes(1, ReEncrypted);
-                            stmt.setString(2, rs.getString("prereg_id"));
+
+                            stmt.setString(2, hashUtill(ReEncrypted));
+
+                        LocalDateTime encryptionDateTime = DateUtils.getUTCCurrentDateTime();
+                            stmt.setTimestamp(3, Timestamp.valueOf(encryptionDateTime));
+                            stmt.setString(4, rs.getString("prereg_id"));
+                            System.out.println("time" + encryptionDateTime);
                             stmt.executeUpdate();
 
                             System.out.println("Updated");
@@ -244,17 +256,29 @@ public class ReEncrypt
     public void start() throws SQLException {
         String query = "SELECT * FROM applicant_demographic";
         System.out.println(reEncryptDatabaseValues(query));
+        TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+        System.out.println(Timestamp.valueOf(LocalDateTime.now()));
 
         try (Connection connection =getConnection()) {
             Statement statement = connection.createStatement();
             ResultSet rs = statement.executeQuery(query);
             int row = 0;
-            while (rs.next() && row++ < 25) {
+            Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+            System.out.println(timestamp);
+            while (rs.next() && row++ < 33) {
                 System.out.println(new String(rs.getBytes("demog_detail")));
+                System.out.println(rs.getString("prereg_id"));
+                System.out.println(rs.getString("demog_detail_hash"));
+                System.out.println(rs.getTimestamp("encrypted_dtimes"));
+                System.out.println("\n");
             }
             }
         catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public static String hashUtill(byte[] bytes) {
+        return HMACUtils.digestAsPlainText(HMACUtils.generateHash(bytes));
     }
 }
