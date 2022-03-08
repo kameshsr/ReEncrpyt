@@ -106,7 +106,7 @@ public class ReEncrypt
                     targetDatasourceUserName, targetDataSourcePassword);
         }
         catch (Exception e){
-            System.out.println(e.getMessage());
+            logger.error(e.getMessage());
         }
         return sourceDatabaseConnection;
     }
@@ -166,11 +166,8 @@ public class ReEncrypt
                         LocalDateTime encryptionDateTime = DateUtils.getUTCCurrentDateTime();
                             stmt.setTimestamp(3, Timestamp.valueOf(encryptionDateTime));
                             stmt.setString(4, rs.getString("prereg_id"));
-                            System.out.println("time" + encryptionDateTime);
                             stmt.executeUpdate();
-
-                            System.out.println("Updated");
-                            System.out.println("after update data\n"+ new String(rs.getBytes("demog_detail")));
+                            logger.info("Updated");
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }
@@ -244,7 +241,6 @@ public class ReEncrypt
         String query = "SELECT * FROM applicant_demographic";
         System.out.println(reEncryptDatabaseValues(query));
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
-        System.out.println(Timestamp.valueOf(LocalDateTime.now()));
         printTableValues(query);
     }
 
@@ -254,13 +250,11 @@ public class ReEncrypt
             ResultSet rs = statement.executeQuery(query);
             int row = 0;
             Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-            System.out.println(timestamp);
             while (rs.next()) {
-                System.out.println(new String(rs.getBytes("demog_detail")));
-                System.out.println(rs.getString("prereg_id"));
-                System.out.println(rs.getString("demog_detail_hash"));
-                System.out.println(rs.getTimestamp("encrypted_dtimes"));
-                System.out.println("\n");
+                logger.info(new String(rs.getBytes("demog_detail")));
+                logger.info(rs.getString("prereg_id"));
+                logger.info(rs.getString("demog_detail_hash"));
+                logger.info(String.valueOf(rs.getTimestamp("encrypted_dtimes")));
             }
         }
         catch (Exception e) {
