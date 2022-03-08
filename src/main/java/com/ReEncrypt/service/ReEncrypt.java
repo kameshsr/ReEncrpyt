@@ -144,6 +144,10 @@ public class ReEncrypt
                 logger.info("account:-" + rs.getString("cr_by"));
                 if (demog_details.length > 0) {
                     byte[] decrypted = decrypt(demog_details, LocalDateTime.now(), decryptBaseUrl);
+                    if(decrypted == null) {
+                        logger.info("Decrypted data is null");
+                        continue;
+                    }
                     logger.info("decrypted pre-reg-data-:-\n" + new String(decrypted));
                     byte[] ReEncrypted = encrypt(decrypted, LocalDateTime.now(), encryptBaseUrl);
                     logger.info("ReEncrypted pre-reg-data-:-\n" + new String(ReEncrypted));
@@ -159,7 +163,7 @@ public class ReEncrypt
                             stmt.executeUpdate();
 
                             System.out.println("Updated");
-                            System.out.println("after update data\n"+rs.getString("demog_detail"));
+                            System.out.println("after update data\n"+ new String(rs.getBytes("demog_detail")));
                         //stmt.executeUpdate(sql);
 //                        ResultSet destinationResultSet = statement.executeQuery(query);
 //                        while (destinationResultSet.next() && row++ < 5) {
@@ -239,13 +243,13 @@ public class ReEncrypt
 
     public void start() throws SQLException {
         String query = "SELECT * FROM applicant_demographic";
-        //System.out.println(reEncryptDatabaseValues(query));
+        System.out.println(reEncryptDatabaseValues(query));
 
         try (Connection connection =getConnection()) {
             Statement statement = connection.createStatement();
             ResultSet rs = statement.executeQuery(query);
             int row = 0;
-            while (rs.next() && row++ < 15) {
+            while (rs.next() && row++ < 25) {
                 System.out.println(new String(rs.getBytes("demog_detail")));
             }
             }
