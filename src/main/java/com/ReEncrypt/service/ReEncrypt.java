@@ -139,8 +139,7 @@ public class ReEncrypt
             Statement statement = connection.createStatement();
             ResultSet rs = statement.executeQuery(query);
             int row = 0;
-            while (rs.next()  && row < 33) {
-
+            while (rs.next()) {
                 logger.info("row=: " + row++);
                 logger.info("Pre_Reg_ID = " + rs.getString("prereg_id"));
                 byte[] demog_details = rs.getBytes("demog_detail");
@@ -157,11 +156,7 @@ public class ReEncrypt
                     byte[] ReEncrypted = encrypt(decrypted, LocalDateTime.now(), encryptBaseUrl);
                     logger.info("ReEncrypted pre-reg-data-:-\n" + new String(ReEncrypted));
 
-                    try {
-//                        String sql = "UPDATE applicant_demographic " +
-//                                "SET demog_detail =" + ReEncrypted + "WHERE prereg_id =" + ?::date
-//                                rs.getString("prereg_id");
-                        String updateQuery =
+                    try {String updateQuery =
                                 "update applicant_demographic set demog_detail=?, demog_detail_hash=?, encrypted_dtimes=?::timestamp where prereg_id=?";
                         PreparedStatement stmt = targetDatabaseConnection.prepareStatement(updateQuery);
                             stmt.setBytes(1, ReEncrypted);
@@ -176,14 +171,6 @@ public class ReEncrypt
 
                             System.out.println("Updated");
                             System.out.println("after update data\n"+ new String(rs.getBytes("demog_detail")));
-                        //stmt.executeUpdate(sql);
-//                        ResultSet destinationResultSet = statement.executeQuery(query);
-//                        while (destinationResultSet.next() && row++ < 5) {
-//                            //Display values
-//                           System.out.println("prereg_id = " + destinationResultSet.getString("prereg_id"));
-//                           System.out.println("demog_detail = \n" + destinationResultSet.getString("demog_detail"));
-//                        }
-                        //destinationResultSet.close();
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }
@@ -258,21 +245,24 @@ public class ReEncrypt
         System.out.println(reEncryptDatabaseValues(query));
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
         System.out.println(Timestamp.valueOf(LocalDateTime.now()));
+        printTableValues(query);
+    }
 
+    private void printTableValues(String query) {
         try (Connection connection =getConnection()) {
             Statement statement = connection.createStatement();
             ResultSet rs = statement.executeQuery(query);
             int row = 0;
             Timestamp timestamp = new Timestamp(System.currentTimeMillis());
             System.out.println(timestamp);
-            while (rs.next() && row++ < 33) {
+            while (rs.next()) {
                 System.out.println(new String(rs.getBytes("demog_detail")));
                 System.out.println(rs.getString("prereg_id"));
                 System.out.println(rs.getString("demog_detail_hash"));
                 System.out.println(rs.getTimestamp("encrypted_dtimes"));
                 System.out.println("\n");
             }
-            }
+        }
         catch (Exception e) {
             e.printStackTrace();
         }
