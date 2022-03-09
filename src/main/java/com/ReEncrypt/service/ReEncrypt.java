@@ -138,7 +138,7 @@ public class ReEncrypt {
             Statement statement = connection.createStatement();
             ResultSet rs = statement.executeQuery(query);
             row = 0;
-            while (rs.next() && row <= 5) {
+            while (rs.next()) {
                 logger.info("row=: " + row++);
                 logger.info("Pre_Reg_ID = " + rs.getString("prereg_id"));
                 byte[] demog_details = rs.getBytes("demog_detail");
@@ -168,7 +168,7 @@ public class ReEncrypt {
                         if (checkUpdateStatus > 0) {
                             logger.info("successfully updated");
                         } else {
-                            logger.info("not updated");
+                            logger.info("inserting new record");
                             String insertQuery = "INSERT INTO applicant_demographic(prereg_id,demog_detail,demog_detail_hash," +
                                     "encrypted_dtimes, status_code, lang_code, cr_appuser_id, cr_by, cr_dtimes, upd_by, upd_dtimes) "
                                     + "VALUES(?,?,?,?::timestamp,?,?,?,?,?::timestamp,?,?::timestamp)";
@@ -262,7 +262,7 @@ public class ReEncrypt {
 
     public void start() throws SQLException {
         String query = "SELECT * FROM applicant_demographic";
-        //System.out.println(reEncryptDatabaseValues(query));
+        System.out.println(reEncryptDatabaseValues(query));
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
         printTableValues(query);
         logger.info("Total rows: " + row);
